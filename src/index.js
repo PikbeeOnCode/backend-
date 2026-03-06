@@ -20,3 +20,10 @@ connectDB()
 .catch((err) => {
     console.error("Failed to connect to the database:", err);
 })
+
+// importing routes 
+import userRoutes from "./routes/user.routes.js";
+
+
+// using routes
+app.use("/api/v1/users", userRoutes)
