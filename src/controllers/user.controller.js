@@ -23,6 +23,9 @@ const createUser  = asyncHandler(async(req,res)=>{
     const coverImageLocalPath = req.files?.coverImage?.[0]?.path;
 
     const avatar = await uploadOnCloudinary(avartarLocalpath);
+    if(!avatar){
+        throw new apiError(500,"Failed to upload avatar");
+    }
 
     const coverImage = coverImageLocalPath ? await uploadOnCloudinary(coverImageLocalPath) : null;
 
