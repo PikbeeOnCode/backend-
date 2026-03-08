@@ -178,8 +178,8 @@ const generateAccessTokenandRefreshToken = asyncHandler(async(req,res)=>{
     }
 
     if(user.refreshToken !== incomingRefreshToken){
-        console.log(`Incoming refresh token: ${incomingRefreshToken}, User's refresh token: ${user.refreshToken}`);
-        console.error("Refresh token mismatch for user:", user);
+        // console.log(`Incoming refresh token: ${incomingRefreshToken}, User's refresh token: ${user.refreshToken}`);
+        // console.error("Refresh token mismatch for user:", user);
         
         throw new apiError(401,"Invalid refresh token from user ");
     };
