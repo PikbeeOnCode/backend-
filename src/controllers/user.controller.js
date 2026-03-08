@@ -3,6 +3,7 @@ import{ apiError } from "../utils/apiError.js";
 import {User} from "../models/user.models.js";
 import {uploadOnCloudinary} from "../utils/cloudinary.js";
 import {apiResponse} from "../utils/apiResponse.js";
+import jwt from "jsonwebtoken";
 
 const createRefreshTokenAndAccessToken = async(userId)=>{
     try{
@@ -12,7 +13,7 @@ const createRefreshTokenAndAccessToken = async(userId)=>{
     }
     const accessToken = user.generateAccesstoken();
     const refreshToken = user.generateRefreshtoken();
-        user.refreshtoken = refreshToken;
+        user.refreshToken = refreshToken;
 
         // console.log("Generated tokens:", { acesstoken, refreshtoken });
 
@@ -40,7 +41,7 @@ const createUser  = asyncHandler(async(req,res)=>{
    if(existedUser){
        throw new apiError(400,"Username or email already exists");
    }
-
+   console.log("Received files:", req.files);
    const avartarLocalpath = req.files?.avatar?.[0]?.path;
    if(!avartarLocalpath){
        throw new apiError(400,"Avatar is required");
@@ -65,7 +66,7 @@ const createUser  = asyncHandler(async(req,res)=>{
         password
     })
 
-   const createdUser = await User.findById(newUser._id).select("-password -refreshtoken");
+   const createdUser = await User.findById(newUser._id).select("-password -refreshToken");
    if(!createdUser){
          throw new apiError(500,"Failed to create user")
    }
@@ -109,7 +110,7 @@ const loginUser = asyncHandler(async(req,res)=>{
 
     const {accessToken, refreshToken} = await createRefreshTokenAndAccessToken(user._id);
 
-    const loggedInuser  = await User.findById(user._id).select("-password -refreshtoken");
+    const loggedInuser  = await User.findById(user._id).select(" -password -refreshToken ");
     
     const options ={
         httpOnly:true,
@@ -159,8 +160,55 @@ const logoutUser = asyncHandler(async(req,res)=>{
 })
 
 
+const generateAccessTokenandRefreshToken = asyncHandler(async(req,res)=>{
+    const incomingRefreshToken  = req.cookies?.refreshToken || req.body?.refreshToken;
+
+    if(!incomingRefreshToken){
+        throw new apiError(400,"Refresh token is required");
+    }
+
+    const decoded = jwt.verify(incomingRefreshToken,process.env.REFRESH_TOKEN_SECRET);
+
+    const user = await User.findById(decoded._id);
+
+    if(!user){
+         console.log("User not found for refresh token:", decoded._id);
+        throw new apiError(404,"User not found");
+       
+    }
+
+    if(user.refreshToken !== incomingRefreshToken){
+        console.log(`Incoming refresh token: ${incomingRefreshToken}, User's refresh token: ${user.refreshToken}`);
+        console.error("Refresh token mismatch for user:", user);
+        
+        throw new apiError(401,"Invalid refresh token from user ");
+    };
+
+    const {accessToken, refreshToken} = await createRefreshTokenAndAccessToken(user._id);
+
+    const options ={
+        httpOnly:true,
+        secure:true,
+    }
+
+    return res.
+    status(200).
+    cookie("refreshToken", refreshToken, options).
+    cookie("accessToken", accessToken, options).
+    json(
+       new apiResponse(200,
+         {
+            accessToken,
+            refreshToken
+         },
+         "Access token and refresh token generated successfully")
+     )
+
+})
+
 export {
     createUser,
     loginUser,
-    logoutUser
+    logoutUser,
+    generateAccessTokenandRefreshToken,
 }
