@@ -317,8 +317,85 @@ const updateUserProfileDetails = asyncHandler(async(req,res)=>{
     json(new apiResponse(200,updatedCoverImage,"Cover image updated successfully"))
 
 
-})
+});
 
+
+
+const getUserChannelProfile = asyncHandler(async(req, res) => {
+    const {username} = req.params;
+    
+    if(!username?.trim()){
+        throw new apiError(400, "Username is required")
+    }
+
+    const channel = await User.aggregate([
+        // Stage 1: find the user
+        {
+            $match: {
+                username: username?.toLowerCase()
+            }
+        },
+        // Stage 2: get subscribers
+        {
+            $lookup: {
+                from: "subscriptions",
+                localField: "_id",
+                foreignField: "channel",
+                as: "subscribers"
+            }
+        },
+        // Stage 3: get who user subscribes to
+        {
+            $lookup: {
+                from: "subscriptions",
+                localField: "_id",
+                foreignField: "subscriber",
+                as: "subscribeTo"
+            }
+        },
+        // Stage 4: add calculated fields
+        {
+            $addFields: {
+                subscribersCount: {
+                    $size: "$subscribers"
+                },
+                subscribeToCount: {
+                    $size: "$subscribeTo"
+                },
+                isSubscribed: {
+                    $cond: {
+                        if: {$in: [req.user?._id, "$subscribers.subscriber"]},
+                        then: true,
+                        else: false
+                    }
+                }
+            }
+        },
+        // Stage 5: select fields to return
+        {
+            $project: {
+                username: 1,
+                email: 1,
+                fullname: 1,
+                avatar: 1,
+                coverImage: 1,
+                subscribersCount: 1,
+                subscribeToCount: 1,
+                isSubscribed: 1
+            }
+        }
+    ])
+
+    console.log("Channel profile data:", channel)
+
+    if(!channel?.length){
+        throw new apiError(404, "Channel not found")
+    }
+
+    return res
+    .status(200)
+    .json(new apiResponse(200, channel[0], "Channel profile fetched successfully"))
+})
 
 export {
     createUser,
@@ -329,5 +406,6 @@ export {
     getuserProfile,
     updateUserProfileDetails,
     updateAvatar,
-    updateCoverImage
+    updateCoverImage,
+    getUserChannelProfile
 }
