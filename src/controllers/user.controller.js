@@ -395,6 +395,50 @@ const getUserChannelProfile = asyncHandler(async(req, res) => {
     return res
     .status(200)
     .json(new apiResponse(200, channel[0], "Channel profile fetched successfully"))
+});
+
+const getUserWatchHistory = asyncHandler(async(req,res)=>{
+    const watchHistory = await User.aggregate([
+        {
+            $match:{
+                _id: new mongooese.Types.ObjectId(req.user._id)
+            }
+        },
+        {
+            $lookup:{
+                from:"videos",
+                localField:"watchHistory",
+                foreignField:"_id",
+                as:"watchHistory",
+                pipeline:[
+                    {
+                        $lookup:{
+                            from:"users",
+                            localField:"owner",
+                            foreignField:"_id",
+                            as:"owner",
+                            pipeline:[
+                                {
+                                    $project:{
+                                        username:1,
+                                        avatar:1,
+                                        fullname:1 
+                                    }
+                                },{
+                                    $first:"$owner"
+                                }
+                            ]
+                        }
+                    },
+                   
+                ]
+            }
+        }
+    ])
+
+    res.
+    status(200).
+    json(new apiResponse(200, watchHistory[0]?.watchHistory || [], "User watch history fetched successfully"))
 })
 
 export {
