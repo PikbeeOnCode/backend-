@@ -187,9 +187,33 @@ const updateVideo = asyncHandler(async(req,res)=>{
     .json(new apiResponse(200, updatedVideoDetails, "Video details updated successfully"))
 
  })
+
+ const deleteVideo = asyncHandler(async(req,res)=>{
+    const videoId = req.params.id;
+
+    if(!videoId){
+        throw new apiError(400,"video id is required")
+    };
+
+    const videoDetails = await Video.findById(videoId);
+
+    if(!videoDetails){
+        throw new apiError(404, "Video not found");
+    }
+
+    await deleteVideoFromCloudinary(videoDetails.videofile);
+    await deleteImageFromCloudinary(videoDetails.thumbnail);
+
+    await Video.findByIdAndDelete(videoId);
+    
+    res.
+    status(200).
+    json(new apiResponse(200, null, "Video deleted successfully"))
+ })
 export {
     publishVideo,
     getvideoById,
-    updateVideo
+    updateVideo,
+    deleteVideo
    
 }
