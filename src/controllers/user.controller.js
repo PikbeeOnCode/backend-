@@ -42,6 +42,7 @@ const createUser  = asyncHandler(async(req,res)=>{
        throw new apiError(400,"Username or email already exists");
    }
    console.log("Received files:", req.files);
+   
    const avartarLocalpath = req.files?.avatar?.[0]?.path;
    if(!avartarLocalpath){
        throw new apiError(400,"Avatar is required");
