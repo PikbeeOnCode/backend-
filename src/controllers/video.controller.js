@@ -164,12 +164,29 @@ const updateVideo = asyncHandler(async(req,res)=>{
     const thumbnail = req.files?.thumbnail?.[0]?.path;
 
     if(thumbnail){
-        
+        const newThumbnail = await uploadOnCloudinary(thumbnail);
+        if(!newThumbnail){
+            throw new apiError(500, "Thumbnail upload failed");
+        }
+
+        await deleteVideoFromCloudinary(oldVideoDetails.thumbnail)
+        newVideoDetails.thumbnail = newThumbnail.secure_url;
+       
     }
 
-  
-})
+  const updatedVideoDetails = await Video.findByIdAndUpdate(VideoId,{
+    $set: newVideoDetails
+  },{new:true});
+ 
+    if(!updatedVideoDetails) {
+        throw new apiError(500, "Video details update failed");
+    };
 
+    res.
+    status(200)
+    .json(new apiResponse(200, updatedVideoDetails, "Video details updated successfully"))
+    
+ })
 export {
     publishVideo,
     getvideoById,
