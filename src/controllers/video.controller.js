@@ -3,7 +3,7 @@ import { Video } from "../models/video.models.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { apiError } from "../utils/apiError.js";
 
-import { uploadOnCloudinary,deleteVideoFromCloudinary } from "../utils/cloudinary.js";
+import { uploadOnCloudinary,deleteVideoFromCloudinary,deleteImageFromCloudinary } from "../utils/cloudinary.js";
 import { apiResponse } from "../utils/apiResponse.js";
 
 
@@ -169,7 +169,7 @@ const updateVideo = asyncHandler(async(req,res)=>{
             throw new apiError(500, "Thumbnail upload failed");
         }
 
-        await deleteVideoFromCloudinary(oldVideoDetails.thumbnail)
+        await deleteImageFromCloudinary(oldVideoDetails.thumbnail)
         newVideoDetails.thumbnail = newThumbnail.secure_url;
        
     }
@@ -185,7 +185,7 @@ const updateVideo = asyncHandler(async(req,res)=>{
     res.
     status(200)
     .json(new apiResponse(200, updatedVideoDetails, "Video details updated successfully"))
-    
+
  })
 export {
     publishVideo,
