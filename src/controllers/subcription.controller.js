@@ -74,7 +74,12 @@ const getUserChannelSubscribers = asyncHandler(async(req,res)=>{
             }
         }
     ])
+
+ return res.
+status(200).
+json(new apiResponse(200, susbcribers,"Subscribers fetched successfully"))
 })
+
 
 export{
     toggleSubcription,
