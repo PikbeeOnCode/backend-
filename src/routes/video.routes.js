@@ -5,7 +5,9 @@ import {
     publishVideo,
     getvideoById,
     updateVideo,
-    deleteVideo
+    deleteVideo,
+    getAllVideos,
+    togglePublishVideo
  } from "../controllers/video.controller.js";
 
 const router = Router();
@@ -19,14 +21,18 @@ router.route("/publish-video").post(
     publishVideo
 );
 
-router.route("/:id").get(verifyJwt, getvideoById);
+router.route("/getvideo/:id").get(verifyJwt, getvideoById);
 
 
 router.route("/updatevideo/:id").post(verifyJwt, upload.fields([
         { name: "videofile", maxCount: 1 },
         { name: "thumbnail", maxCount: 1 }
     ]), updateVideo);
-    
+
 router.route("/deletevideo/:id").delete(verifyJwt, deleteVideo);
+
+router.route("/allvideos").get(verifyJwt, getAllVideos);
+
+router.route("/toggle-publish/:id").patch(verifyJwt, togglePublishVideo);
 
 export default router

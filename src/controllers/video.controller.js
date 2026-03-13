@@ -5,6 +5,8 @@ import { apiError } from "../utils/apiError.js";
 
 import { uploadOnCloudinary,deleteVideoFromCloudinary,deleteImageFromCloudinary } from "../utils/cloudinary.js";
 import { apiResponse } from "../utils/apiResponse.js";
+import { User } from "../models/user.models.js";
+import { json } from "express";
 
 
 
@@ -63,6 +65,7 @@ const publishVideo = asyncHandler(async(req,res)=>{
 
 })
 
+
 const getvideoById = asyncHandler(async(req,res)=>{
     const videoId = req.params.id;
 
@@ -119,6 +122,7 @@ const getvideoById = asyncHandler(async(req,res)=>{
     res.status(200).json(new apiResponse(200,  videoDetails,"Video details fetched successfully",)
     )
 })
+
 
 const updateVideo = asyncHandler(async(req,res)=>{
     const VideoId = req.params.id;
@@ -188,6 +192,7 @@ const updateVideo = asyncHandler(async(req,res)=>{
 
  })
 
+
  const deleteVideo = asyncHandler(async(req,res)=>{
     const videoId = req.params.id;
 
@@ -209,11 +214,128 @@ const updateVideo = asyncHandler(async(req,res)=>{
     res.
     status(200).
     json(new apiResponse(200, null, "Video deleted successfully"))
+ });
+
+
+ const getAllVideos = asyncHandler(async(req,res)=>{
+    const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
+
+    console.log("query params:", { page, limit, query, sortBy, sortType, userId }) // add this
+
+    
+    const pipeline = [];
+
+    if(userId){
+        const user = await User.findById(userId)
+        if(!user) throw new apiError(404, "User not found")
+        
+        pipeline.push({
+            $match:{
+                owner: new mongoose.Types.ObjectId(userId)
+            }
+        })
+    }
+    if(query){
+        pipeline.push({
+            $match:{
+                title: { $regex: query, $options: "i" }
+            }
+        })
+    }
+
+    
+        pipeline.push({
+            $match:{
+                isPublished: true
+            }
+        })
+
+
+    pipeline.push({
+        $lookup:{
+            from:"users",
+            localField:"owner",
+            foreignField:"_id",
+            pipeline:[{
+                $project:{
+                    username:1,
+                    avatar:1,
+            }
+        }],
+        as:"ownerDetails",
+ }});
+
+ pipeline.push({
+    $addFields:{
+        ownerDetails:{
+            $first:"$ownerDetails"
+        }
+    }
+ });
+
+ pipeline.push({
+    $sort:{
+        [sortBy || "createdAt"]: sortType === "desc" ? -1 : 1 ,
+    }
  })
+    
+const options = {
+    page:parseInt(page),
+    limit:parseInt(limit)
+}
+
+const videos = await Video.aggregatePaginate(
+    Video.aggregate(pipeline), options);
+
+res.
+ status(200).
+ json(new apiResponse(200,videos, "Videos fetched successfully"))
+ })
+
+
+const togglePublishVideo = asyncHandler(async(req,res)=>{
+     const videoId = req.params.id;
+
+     if(!videoId){
+        throw new apiError(400,"videoId  not found");
+     }
+
+     const userid = req.user._id;
+
+     if(!userid){
+        throw new apiError(401,"user is not logged in ")
+     }
+
+     const video = await Video.findById(videoId);
+
+        if(!video){
+            throw new apiError(404,"Video not found")
+        }
+
+        
+     if(!(video.owner.toString() == userid)){
+        throw new apiError(403,"Unauthorized to  this video")
+     }
+
+
+        video.isPublished = !video.isPublished;
+
+      await  video.save(
+            {validateBeforeSave: false}
+        );
+
+
+        res.
+        status(200).
+        json(new apiResponse(200, video, `Video ${video.isPublished ? "published" : "unpublished"} successfully`))
+
+})
+ 
 export {
     publishVideo,
     getvideoById,
     updateVideo,
-    deleteVideo
-   
+    deleteVideo ,
+    getAllVideos,
+    togglePublishVideo
 }
