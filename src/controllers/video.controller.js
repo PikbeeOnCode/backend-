@@ -3,7 +3,9 @@ import { Video } from "../models/video.models.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { apiError } from "../utils/apiError.js";
 
-import { uploadOnCloudinary,deleteVideoFromCloudinary,deleteImageFromCloudinary } from "../utils/cloudinary.js";
+import { uploadOnCloudinary,
+    deleteVideoFromCloudinary,
+    deleteImageFromCloudinary } from "../utils/cloudinary.js";
 import { apiResponse } from "../utils/apiResponse.js";
 import { User } from "../models/user.models.js";
 import { json } from "express";

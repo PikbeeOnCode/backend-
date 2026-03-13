@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 // importing routes 
 import userRoutes from "./routes/user.routes.js";
 import videoRoutes from "./routes/video.routes.js"
+import subscriptionRoutes from "./routes/subscription.routes.js";
 
 const app = express();
 
@@ -28,6 +29,7 @@ app.use(cookieParser());
 // using routes
 app.use("/api/v1/users", userRoutes)
 app.use("/api/v1/videos", videoRoutes)
+app.use("/api/v1/subscriptions", subscriptionRoutes)
 
 
 export {app };
