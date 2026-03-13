@@ -78,10 +78,49 @@ const getUserChannelSubscribers = asyncHandler(async(req,res)=>{
  return res.
 status(200).
 json(new apiResponse(200, susbcribers,"Subscribers fetched successfully"))
-})
+});
 
+const getSubscribedChannels = asyncHandler(async(req,res)=>{
+    const user = req.user;
+
+    const subscribedChannel = await Subscription.aggregate([
+        {
+            $match:{subscriber: new mongoose.Types.ObjectId(user._id)}
+        },{
+            $lookup:{
+                from:"users",
+                localField:"channel",
+                foreignField:"_id",
+                pipeline:[
+                    {
+                        $project:{
+                            username:1,
+                            avatar:1,
+                            fullname:1
+                        }
+                    }
+                ],
+                as:"subscribedTo",
+            }
+        },{
+            $addFields:{
+                subscribedTo:{
+                    $first:"$subscribedTo"
+                }
+            }
+        },
+        {
+            $project:{
+                subscribedTo:1
+            }
+        }
+    ])
+
+    return res.status(200).json(new apiResponse(200, subscribedChannel,"Subscribed channels fetched successfully"))
+})
 
 export{
     toggleSubcription,
-    getUserChannelSubscribers
+    getUserChannelSubscribers,
+    getSubscribedChannels
 }
