@@ -1,0 +1,28 @@
+{
+    "watch": [
+        "src/index.js",
+        "src/app.js",
+        "src/constants.js",
+        "src/controllers",
+        "src/routes",
+        "src/models",
+        "src/middlewares",
+        "src/utils",
+        "src/db"
+    ],
+    "ext": "js,json",
+    "ignore": [
+        "public/**",
+        "node_modules/**",
+        ".env",
+        "**/*.log",
+        "**/*.tmp",
+        "**/*.swp",
+        "**/*~",
+        "**/.DS_Store",
+        "**/.vscode/**",
+        "**/.git/**"
+    ],
+    "delay": 2000,
+    "legacyWatch": true
+}
