@@ -3,6 +3,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { apiError } from "../utils/apiError.js";
 import { apiResponse } from "../utils/apiResponse.js";
 import mongoose from "mongoose";
+import { title } from "process";
 
 
 const createPlaylist = asyncHandler(async(req,res)=>{
@@ -125,24 +126,66 @@ const getPlaylistbyId = asyncHandler(async(req,res)=>{
         throw new apiError(400, "Invalid playlist id");
     }
 
-    const playlist = await Playlist.findById(playlistId)
-        .populate({
-            path: "videos",
-            select: "title description thumbnail owner views duration isPublished createdAt"
-        })
-        .populate({
-            path: "owner",
-            select: "username fullname avatar"
-        });
+    const playList = await Playlist.aggregate([
+        {
+            $match:{_id:new mongoose.Types.ObjectId(playlistId)}
+        },
+        {
+            $lookup:{
+                from:"videos",
+                localField:"videos",
+                foreignField:"_id",
+                pipeline:[
+                    {
+                        $project:{
+                            title :1,
+                            description:1,
+                            thumbnail:1,  
+                        }
+                    }
+                ],
+                as:"videoDetails"
+            }
+        },{
+            $lookup:{
+                from:"users",
+                localField:"owner",
+                foreignField:"_id",
+                pipeline:[
+                    {
+                        $project:{
+                            username:1,
+                            email:1
+                        }
+                    }
+                ],
+                as:"ownerDetails"
 
-    if(!playlist){
-        throw new apiError(404, "Playlist not found");
-    }
+            }
+        }
+        
+        ,{
+            $addFields:{
+                videos:{
+                    $first:"$videoDetails"
+                },
+                owner:{
+                    $first:"$ownerDetails"
+                }
+            }
+        },{
+            $project:{
+                name:1,
+                description:1,
+                videos:1,
+                owner:1
+            }
+        }
+    ])
 
-    return res
-        .status(200)
-        .json(new apiResponse(200, playlist, "Playlist fetched successfully"));
-})
+    res.status(200).json(new apiResponse(200, playList, "Playlist details fetched successfully"))
+
+});
 
 export {
     createPlaylist,
