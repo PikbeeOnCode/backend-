@@ -3,7 +3,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { apiError } from "../utils/apiError.js";
 import { apiResponse } from "../utils/apiResponse.js";
 import mongoose from "mongoose";
-import { title } from "process";
+
 
 
 const createPlaylist = asyncHandler(async(req,res)=>{
@@ -77,6 +77,7 @@ const addVideoToPlaylist = asyncHandler(async(req,res)=>{
         );
     }
   
+
 
     const addedvideoplaylist = await Playlist.findByIdAndUpdate(PlaylistId,{
         $addToSet:{videos:videoid}
@@ -187,10 +188,129 @@ const getPlaylistbyId = asyncHandler(async(req,res)=>{
 
 });
 
+const removeVideoFromPlaylist = asyncHandler(async(req,res)=>{
+    const user = req.user;
+    const {PlaylistId,videoid}= req.params;
+
+    if(!PlaylistId){
+        throw new  apiError(400, "Playlist id is required");
+    }
+
+    if(!mongoose.Types.ObjectId.isValid(PlaylistId)){
+        throw new apiError(400, "Invalid playlist id");
+    }
+
+    if(!videoid){
+        throw new apiError(400, "Video id is required");
+    }
+
+    if(!mongoose.Types.ObjectId.isValid(videoid)){
+        throw new apiError(400, "Invalid video id");
+    }
+
+    const playlist = await Playlist.findById(PlaylistId);
+     
+    if(!playlist){
+        throw new apiError(404, "Playlist not found");
+    }
+
+    if(playlist.owner.toString() !== user._id.toString()){
+        throw new apiError(403," You are not authorized to remove video from this playlist");
+    }
+
+    if(!playlist.videos.includes(videoid)){
+        throw new apiError(404, "Video not found in the playlist");
+    }
+
+    const removedVideoPlaylist = await Playlist.findByIdAndUpdate(PlaylistId,{
+        $pull:{videos:videoid}
+    },{
+        new:true
+    })
+
+    console.log(removedVideoPlaylist)
+
+    return res.status(200).
+    json(new apiResponse(200, removedVideoPlaylist,"Video removed from playlist successfully"))
+
+
+})
+
+const deleteplaylist = asyncHandler(async(req,res)=>{
+    const {playlistId} = req.params;
+    const user = req.user;
+
+    if(!playlistId){
+        throw new apiError(400, "Playlist id is required");
+    }
+
+    if(!mongoose.Types.ObjectId.isValid(playlistId)){
+        throw new apiError(400, "Invalid playlist id");
+    }
+
+    const playlist = await Playlist.findById(playlistId);
+
+    if(!playlist){
+        throw new apiError(404, "Playlist not found");
+    }
+
+    if(user._id.toString() !== playlist.owner.toString()){
+        throw new apiError(403, "You are not authorized to delete this playlist");
+    }
+
+    const deletedPlaylist = await Playlist.findByIdAndDelete(playlistId);
+
+    if(!deletedPlaylist){
+        throw new apiError(404, "Playlist not found");
+    }
+
+    return res.status(200).json(new apiResponse(200, deletedPlaylist,"Playlist deleted successfully"))
+})
+
+const updateplaylist = asyncHandler(async(req,res)=>{
+    const playlistId = req.params.playlistId;
+    const {name, description} = req.body;
+    const user = req.user;
+
+    const updatedPlayListData = {};
+
+    if(!playlistId){
+        throw new apiError(400, "Playlist id is required");
+    }
+
+    const playlist = await Playlist.findById(playlistId);
+
+    if(!playlist){
+        throw new apiError(404, "Playlist not found");
+    }
+
+    if (user._id.toString() !== playlist.owner.toString()){
+        throw new apiError(403, "You are not authorized to update this playlist");
+    }
+
+    if(!(name || description)){
+        throw new apiError(400, "At least one field (name or description) is required to update");
+    }
+
+    updatedPlayListData.name = name ? name : playlist.name;
+    updatedPlayListData.description = description ? description : playlist.description;
+
+    const updatedPlaylist = await Playlist.findByIdAndUpdate(playlistId, updatedPlayListData, {new:true});
+
+    if(!updatedPlaylist){
+        throw new apiError(404, "Playlist not found");
+    }
+
+    return res.status(200).json(new apiResponse(200, updatedPlaylist,"Playlist updated successfully"))
+})
+
 export {
     createPlaylist,
     addVideoToPlaylist,
     getUserPlaylists,
-    getPlaylistbyId
+    getPlaylistbyId,
+    removeVideoFromPlaylist,
+    deleteplaylist,
+    updateplaylist
 }
    
